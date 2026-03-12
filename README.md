@@ -3,7 +3,7 @@
 ------
 
 
-# TimeShift Radio
+# Radio-Delay / TimeShift Radio
 
 A web-based internet radio player with time-delayed playback. Records a live radio stream to a local buffer and plays it back with a configurable delay — for example, 9 hours back, so you can listen to US primetime radio during European evening hours.
 
