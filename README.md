@@ -1,3 +1,8 @@
+> Built for personal use with [Claude Code](https://claude.com/claude-code) by Anthropic.
+> Tested on Windows; also runs in Docker.
+------
+
+
 # TimeShift Radio
 
 A web-based internet radio player with time-delayed playback. Records a live radio stream to a local buffer and plays it back with a configurable delay — for example, 9 hours back, so you can listen to US primetime radio during European evening hours.
@@ -131,7 +136,3 @@ delayedradio/
 
 [MIT](LICENSE)
 
----
-
-> Built for personal use with [Claude Code](https://claude.com/claude-code) by Anthropic.
-> Tested on Windows with Laragon; also runs in Docker.
