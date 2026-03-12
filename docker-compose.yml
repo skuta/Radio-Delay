@@ -1,0 +1,21 @@
+services:
+  downloader:
+    build: .
+    command: python downloader.py
+    restart: unless-stopped
+    volumes:
+      - buffer_data:/app/buffer
+      - ./config.json:/app/config.json:ro
+
+  server:
+    build: .
+    command: python server.py
+    restart: unless-stopped
+    ports:
+      - "${DELAYEDRADIO_PORT:-5000}:5000"
+    volumes:
+      - buffer_data:/app/buffer
+      - ./config.json:/app/config.json:ro
+
+volumes:
+  buffer_data:

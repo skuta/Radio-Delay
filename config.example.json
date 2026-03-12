@@ -1,0 +1,17 @@
+{
+    "stations": [
+        {
+            "id": "my-station",
+            "name": "My Radio Station",
+            "stream_url": "https://stream.example.com/live.mp3",
+            "delay_hours": 6,
+            "kbps": 128,
+            "radio_timezone": "America/New_York"
+        }
+    ],
+    "server": {
+        "host": "0.0.0.0",
+        "port": 5000,
+        "timezone": "Europe/London"
+    }
+}

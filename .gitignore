@@ -1,0 +1,13 @@
+buffer/
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+node_modules/
+*.mp3
+downloader_stats.json
+.idea/
+.vscode/
+*.log

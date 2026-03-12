@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeShift Radio — Stats</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --green: #34d399;
+            --green-bg: rgba(16, 185, 129, 0.15);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251, 191, 36, 0.15);
+            --red: #f43f5e;
+            --red-bg: rgba(244, 63, 94, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #331560, #0f172a 60%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 32px 16px 48px;
+        }
+
+        header {
+            max-width: 960px;
+            margin: 0 auto 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        header h1 span {
+            color: var(--primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-link {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+
+        #refresh-info {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #refresh-info .dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .grid {
+            max-width: 960px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+        }
+
+        .card.wide {
+            grid-column: 1 / -1;
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon { font-size: 14px; }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-label { color: var(--muted); }
+
+        .stat-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .uptime-big {
+            text-align: center;
+            padding: 10px 0 18px;
+        }
+
+        .uptime-big .pct {
+            font-size: 52px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .uptime-big .pct-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-green { background: var(--green-bg); color: var(--green); }
+        .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+        .badge-red { background: var(--red-bg); color: var(--red); }
+        .badge-purple { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+
+        .history-list {
+            max-height: 240px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+
+        .history-list::-webkit-scrollbar { width: 4px; }
+        .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+
+        .history-item:last-child { border-bottom: none; }
+
+        .history-ts {
+            color: var(--muted);
+            white-space: nowrap;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .history-reason {
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .history-empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 12px 0;
+            text-align: center;
+        }
+
+        .error-banner {
+            background: var(--red-bg);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            color: var(--red);
+            font-size: 14px;
+        }
+
+        .uptime-bar-wrap {
+            background: rgba(255,255,255,0.07);
+            border-radius: 99px;
+            height: 6px;
+            margin: 0 0 18px;
+            overflow: hidden;
+        }
+
+        .uptime-bar {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.6s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1 id="page-title">TimeShift Radio — <span>Stats</span></h1>
+    <div class="header-right">
+        <span id="refresh-info"><span class="dot"></span>Refresh in <span id="countdown">10</span>s</span>
+        <a id="back-link" href="/" class="back-link">← Player</a>
+    </div>
+</header>
+
+<div class="grid" id="grid">
+    <div class="card" id="loading-card" style="grid-column:1/-1; text-align:center; padding:48px; color:var(--muted);">
+        Loading stats...
+    </div>
+</div>
+
+<script>
+const REFRESH_INTERVAL = 10;
+let countdown = REFRESH_INTERVAL;
+let timer = null;
+
+// Detect station from URL path: /station/<id>/stats.html
+function getStationId() {
+    const match = window.location.pathname.match(/\/station\/([^/]+)/);
+    return match ? match[1] : null;
+}
+
+const stationId = getStationId();
+const statsUrl = stationId ? `/station/${stationId}/stats` : '/stats';
+const backUrl = stationId ? `/station/${stationId}/` : '/';
+document.getElementById('back-link').href = backUrl;
+
+function fmtDuration(sec) {
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+    if (m > 0) return `${m}m ${String(s).padStart(2,'0')}s`;
+    return `${s}s`;
+}
+
+function fmtBytes(mb) {
+    if (mb >= 1024) return (mb / 1024).toFixed(2) + ' GB';
+    return mb.toFixed(1) + ' MB';
+}
+
+function uptimeBadge(pct) {
+    if (pct >= 99) return `<span class="badge badge-green">${pct.toFixed(2)} %</span>`;
+    if (pct >= 95) return `<span class="badge badge-yellow">${pct.toFixed(2)} %</span>`;
+    return `<span class="badge badge-red">${pct.toFixed(2)} %</span>`;
+}
+
+function uptimeColor(pct) {
+    if (pct >= 99) return 'var(--green)';
+    if (pct >= 95) return 'var(--yellow)';
+    return 'var(--red)';
+}
+
+function valBadge(val, warnAbove, errorAbove) {
+    if (val === 0) return `<span class="badge badge-green">${val}</span>`;
+    if (val <= warnAbove) return `<span class="badge badge-yellow">${val}</span>`;
+    return `<span class="badge badge-red">${val}</span>`;
+}
+
+function reasonBadgeClass(reason) {
+    if (reason === 'stream_closed') return 'badge-purple';
+    if (reason.startsWith('timeout')) return 'badge-yellow';
+    return 'badge-red';
+}
+
+function renderStats(d) {
+    const rec = d.recording;
+    const play = d.playback;
+    const err = d.errors;
+    const sys = d.system;
+
+    // Update title with station name if available
+    if (d.station && d.station.name) {
+        document.getElementById('page-title').innerHTML =
+            `${d.station.name} — <span>Stats</span>`;
+        document.title = `${d.station.name} — Stats`;
+    }
+
+    const uptimePct = rec.uptime_percent;
+    const barColor = uptimeColor(uptimePct);
+
+    const cards = [
+        /* ---- RECORDING ---- */
+        `<div class="card">
+            <div class="card-title"><span class="icon">🎙️</span> Recording (Buffer)</div>
+            <div class="uptime-big">
+                <div class="pct" style="color:${barColor}">${uptimePct.toFixed(2)} %</div>
+                <div class="pct-label">recording uptime</div>
+            </div>
+            <div class="uptime-bar-wrap">
+                <div class="uptime-bar" style="width:${Math.min(uptimePct,100)}%;background:${barColor}"></div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Active recording</span>
+                <span class="stat-value">${fmtDuration(rec.uptime_seconds)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total downtime</span>
+                <span class="stat-value">${fmtDuration(rec.downtime_seconds)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Reconnect count</span>
+                <span class="stat-value">${valBadge(rec.reconnect_count, 5, 20)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Downloaded from source</span>
+                <span class="stat-value">${fmtBytes(rec.downloaded_mb)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Missing minutes in buffer</span>
+                <span class="stat-value">${valBadge(rec.missing_minutes, 2, 10)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Buffer directory size</span>
+                <span class="stat-value">${fmtBytes(rec.buffer_dir_mb)}</span>
+            </div>
+        </div>`,
+
+        /* ---- PLAYBACK ---- */
+        `<div class="card">
+            <div class="card-title"><span class="icon">📤</span> Playback (Client output)</div>
+            <div class="stat-row">
+                <span class="stat-label">Sent to clients</span>
+                <span class="stat-value">${fmtBytes(play.sent_mb)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Active clients</span>
+                <span class="stat-value">
+                    <span class="badge badge-${play.active_clients > 0 ? 'green' : 'purple'}">${play.active_clients}</span>
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Silence chunks sent</span>
+                <span class="stat-value">${valBadge(play.silence_chunks_sent, 10, 60)}</span>
+            </div>
+
+            <div class="card-title" style="margin-top:24px"><span class="icon">⚙️</span> System</div>
+            <div class="stat-row">
+                <span class="stat-label">Server uptime</span>
+                <span class="stat-value">${fmtDuration(sys.server_uptime_seconds)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">RAM (process)</span>
+                <span class="stat-value">${sys.ram_mb.toFixed(1)} MB</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">CPU (process)</span>
+                <span class="stat-value">${sys.cpu_percent.toFixed(1)} %</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Free disk space</span>
+                <span class="stat-value ${sys.disk_free_gb < 1 ? 'badge badge-red' : ''}">${sys.disk_free_gb.toFixed(2)} GB</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total disk size</span>
+                <span class="stat-value">${sys.disk_total_gb.toFixed(1)} GB</span>
+            </div>
+        </div>`,
+
+        /* ---- ERRORS ---- */
+        `<div class="card">
+            <div class="card-title"><span class="icon">⚠️</span> Errors & Reliability</div>
+            <div class="stat-row">
+                <span class="stat-label">Timeout errors (stream read)</span>
+                <span class="stat-value">${valBadge(err.timeout_errors, 3, 10)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Network errors</span>
+                <span class="stat-value">${valBadge(err.network_errors, 3, 10)}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Resolver failures (PLS/M3U)</span>
+                <span class="stat-value">${valBadge(err.resolver_failures, 1, 5)}</span>
+            </div>
+        </div>`,
+
+        /* ---- HISTORY ---- */
+        `<div class="card wide">
+            <div class="card-title"><span class="icon">🕐</span> Reconnect history (last ${err.reconnect_history.length})</div>
+            ${err.reconnect_history.length === 0
+                ? `<div class="history-empty">No reconnects — everything is running smoothly.</div>`
+                : `<div class="history-list">
+                    ${err.reconnect_history.map(e => `
+                        <div class="history-item">
+                            <span class="history-ts">${e.ts}</span>
+                            <span class="badge ${reasonBadgeClass(e.reason)}" style="flex-shrink:0">${e.reason.split(':')[0]}</span>
+                            <span class="history-reason">${e.reason.includes(':') ? e.reason.split(':').slice(1).join(':').trim() : ''}</span>
+                        </div>`).join('')}
+                   </div>`
+            }
+        </div>`
+    ];
+
+    document.getElementById('grid').innerHTML = cards.join('');
+}
+
+function renderError(msg) {
+    document.getElementById('grid').innerHTML = `
+        <div class="card" style="grid-column:1/-1">
+            <div class="error-banner">⚠️ ${msg}</div>
+        </div>`;
+}
+
+async function fetchStats() {
+    try {
+        const res = await fetch(statsUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderStats(data);
+    } catch (e) {
+        renderError(`Failed to load stats: ${e.message}`);
+    }
+}
+
+function startCountdown() {
+    clearInterval(timer);
+    countdown = REFRESH_INTERVAL;
+    document.getElementById('countdown').textContent = countdown;
+    timer = setInterval(() => {
+        countdown--;
+        document.getElementById('countdown').textContent = countdown;
+        if (countdown <= 0) {
+            countdown = REFRESH_INTERVAL;
+            fetchStats();
+        }
+    }, 1000);
+}
+
+fetchStats();
+startCountdown();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeShift Radio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at top right, #331560, #0f172a 60%);
+        }
+
+        .player-card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 460px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .cover-art {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            margin: 0 auto 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 64px;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+            animation: spin 20s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .playing .cover-art {
+            animation-play-state: running;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 24px;
+        }
+
+        p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 10px 0 30px;
+        }
+
+        .play-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .play-btn:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .delay-control {
+            margin: 20px 0 30px;
+        }
+
+        .delay-control > label {
+            display: block;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .delay-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .delay-btn {
+            background: rgba(0, 0, 0, 0.25);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 10px 4px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            line-height: 1.2;
+            min-height: 52px;
+        }
+
+        .delay-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: white;
+        }
+
+        .delay-btn.selected {
+            background: rgba(139, 92, 246, 0.35);
+            border-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .delay-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .delay-btn .badge {
+            font-size: 10px;
+            font-weight: 600;
+            background: rgba(139, 92, 246, 0.5);
+            color: #e0d4ff;
+            border-radius: 4px;
+            padding: 1px 5px;
+            letter-spacing: 0.03em;
+        }
+
+        .delay-btn.selected .badge {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #audio-player {
+            display: none;
+        }
+
+        .suggestion-hint {
+            font-size: 12px;
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        /* Station selector styles */
+        .station-selector {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .station-selector h1 {
+            margin-bottom: 8px;
+        }
+
+        .station-selector p {
+            margin-bottom: 30px;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .station-card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.4);
+        }
+
+        .station-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px -8px rgba(139, 92, 246, 0.3);
+        }
+
+        .station-card .station-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+        }
+
+        .station-card .station-card-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Station selector (shown when multiple stations, served from /) -->
+    <div class="station-selector" id="station-selector" style="display:none;">
+        <h1>TimeShift Radio</h1>
+        <p style="color:#94a3b8">Choose a station to listen to</p>
+        <div class="station-grid" id="station-grid"></div>
+    </div>
+
+    <!-- Player (shown for single station or /station/<id>/) -->
+    <div class="player-card" id="card" style="display:none;">
+        <div class="cover-art">📻</div>
+        <h1 id="station-name">Loading...</h1>
+
+        <div class="delay-control">
+            <label>Broadcast Delay:</label>
+            <div class="suggestion-hint" id="suggestion-hint"></div>
+            <div class="delay-grid" id="delay-grid">
+                <button class="delay-btn selected" data-value="0">Live</button>
+                <button class="delay-btn" data-value="1">−1 hr</button>
+                <button class="delay-btn" data-value="2">−2 hr</button>
+                <button class="delay-btn" data-value="3">−3 hr</button>
+                <button class="delay-btn" data-value="4">−4 hr</button>
+                <button class="delay-btn" data-value="5">−5 hr</button>
+                <button class="delay-btn" data-value="6">−6 hr</button>
+                <button class="delay-btn" data-value="8">−8 hr</button>
+                <button class="delay-btn" data-value="9">−9 hr</button>
+                <button class="delay-btn" data-value="10">−10 hr</button>
+                <button class="delay-btn" data-value="12">−12 hr</button>
+                <button class="delay-btn" data-value="18">−18 hr</button>
+                <button class="delay-btn" data-value="24">−24 hr<span class="badge">Yesterday</span></button>
+            </div>
+        </div>
+
+        <audio id="audio-player" crossorigin="anonymous"></audio>
+
+        <button class="play-btn" id="play-btn" onclick="togglePlay()">
+            <svg id="icon-play" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg id="icon-pause" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px; display:none;">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span id="btn-text">Listen Delayed</span>
+        </button>
+
+        <div class="status-badge" id="conn-status">Loading configuration...</div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('audio-player');
+        const card = document.getElementById('card');
+        const playBtnText = document.getElementById('btn-text');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const connStatus = document.getElementById('conn-status');
+        const delayGrid = document.getElementById('delay-grid');
+
+        let isPlaying = false;
+        let initialConfigFetched = false;
+        let currentDelay = 0;
+
+        // Detect station from URL path: /station/<id>/
+        function getStationId() {
+            const match = window.location.pathname.match(/\/station\/([^/]+)/);
+            return match ? match[1] : null;
+        }
+
+        const stationId = getStationId();
+
+        // If we're at / with no station id, check if we need to show station selector
+        if (!stationId) {
+            fetch('/api/stations')
+                .then(r => r.json())
+                .then(stations => {
+                    if (stations.length === 0) {
+                        document.getElementById('card').style.display = '';
+                        document.getElementById('station-name').innerText = 'No stations configured';
+                    } else if (stations.length === 1) {
+                        // Single station — redirect handled by server, but just in case
+                        window.location.href = `/station/${stations[0].id}/`;
+                    } else {
+                        // Show station selector
+                        const selector = document.getElementById('station-selector');
+                        const grid = document.getElementById('station-grid');
+                        selector.style.display = '';
+                        stations.forEach(s => {
+                            const a = document.createElement('a');
+                            a.className = 'station-card';
+                            a.href = `/station/${s.id}/`;
+                            a.innerHTML = `
+                                <div class="station-icon">📻</div>
+                                <div class="station-card-name">${s.name}</div>
+                            `;
+                            grid.appendChild(a);
+                        });
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('card').style.display = '';
+                    connStatus.innerText = "Server offline";
+                    connStatus.style.color = "#f43f5e";
+                });
+        } else {
+            // Station player mode
+            document.getElementById('card').style.display = '';
+            const statusUrl = `/station/${stationId}/status`;
+            const streamBaseUrl = `/station/${stationId}/stream`;
+            const statsUrl = `/station/${stationId}/stats.html`;
+
+            function findClosestDelayBtn(targetHours, btns) {
+                return btns.reduce((best, btn) =>
+                    Math.abs(parseFloat(btn.dataset.value) - targetHours) <
+                    Math.abs(parseFloat(best.dataset.value) - targetHours) ? btn : best
+                );
+            }
+
+            function computeSuggestedHours(radio_tz, server_tz) {
+                try {
+                    const now = new Date();
+                    const formatterRadio = new Intl.DateTimeFormat('en-US', {
+                        timeZone: radio_tz,
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hourCycle: 'h23'
+                    });
+                    const formatterServer = new Intl.DateTimeFormat('en-US', {
+                        timeZone: server_tz,
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hourCycle: 'h23'
+                    });
+
+                    const parseParts = (parts) => {
+                        const d = {};
+                        parts.forEach(p => d[p.type] = p.value);
+                        return new Date(Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.second));
+                    };
+
+                    const timeRadio = parseParts(formatterRadio.formatToParts(now));
+                    const timeServer = parseParts(formatterServer.formatToParts(now));
+
+                    const offsetHours = (timeServer - timeRadio) / 3600000;
+                    let delay = -offsetHours;
+                    while (delay <= 0) delay += 24;
+                    return delay;
+                } catch (e) {
+                    console.error("Timezone error", e);
+                    return 24;
+                }
+            }
+
+            function showSuggestion(server_tz, suggestedHours) {
+                try {
+                    const now = new Date();
+                    const formatterServer = new Intl.DateTimeFormat('en-US', {
+                        timeZone: server_tz,
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    const t = formatterServer.format(now);
+                    document.getElementById('suggestion-hint').innerHTML =
+                        `Suggested: current time for <strong>${server_tz}</strong> (${t}) &rarr; delay <strong>&minus;${Math.round(suggestedHours)}h</strong>`;
+                } catch(e) {
+                    document.getElementById('suggestion-hint').innerHTML = `Suggested delay <strong>&minus;${Math.round(suggestedHours)}h</strong>`;
+                }
+            }
+
+            function getDelayBtns() {
+                return Array.from(delayGrid.querySelectorAll('.delay-btn'));
+            }
+
+            function selectDelay(value) {
+                currentDelay = value;
+                getDelayBtns().forEach(btn => {
+                    btn.classList.toggle('selected', parseFloat(btn.dataset.value) === value);
+                });
+            }
+
+            delayGrid.addEventListener('click', e => {
+                const btn = e.target.closest('.delay-btn');
+                if (!btn || btn.disabled) return;
+                const val = parseFloat(btn.dataset.value);
+                selectDelay(val);
+                if (isPlaying) startStream();
+            });
+
+            async function fetchStatus() {
+                try {
+                    const res = await fetch(statusUrl);
+                    const data = await res.json();
+                    document.getElementById('station-name').innerText = data.station_name || stationId;
+                    document.title = `${data.station_name || stationId} — TimeShift Radio`;
+
+                    const maxDelay = data.max_available_delay_hours || 0;
+
+                    getDelayBtns().forEach(btn => {
+                        const val = parseFloat(btn.dataset.value);
+                        if (val !== 0 && val > maxDelay + 0.1) {
+                            btn.disabled = true;
+                        } else {
+                            btn.disabled = false;
+                        }
+                    });
+
+                    if (!initialConfigFetched) {
+                        const configDelay = data.delay_hours;
+                        const serverTz = data.server_timezone || "Europe/London";
+                        const radioTz = data.radio_timezone || "America/Los_Angeles";
+                        const suggestedHours = computeSuggestedHours(radioTz, serverTz);
+                        showSuggestion(serverTz, suggestedHours);
+
+                        const match = getDelayBtns().find(btn => parseFloat(btn.dataset.value) === configDelay);
+
+                        if (configDelay !== undefined && !match) {
+                            const newBtn = document.createElement('button');
+                            newBtn.className = 'delay-btn';
+                            newBtn.dataset.value = configDelay;
+                            newBtn.textContent = `−${configDelay} hr`;
+                            if (configDelay > maxDelay + 0.1) newBtn.disabled = true;
+                            delayGrid.appendChild(newBtn);
+                        }
+
+                        const enabledBtns = getDelayBtns().filter(b => !b.disabled);
+                        if (enabledBtns.length > 0) {
+                            const best = findClosestDelayBtn(suggestedHours, enabledBtns);
+                            selectDelay(parseFloat(best.dataset.value));
+                        } else {
+                            selectDelay(0);
+                        }
+
+                        initialConfigFetched = true;
+                    } else {
+                        const selected = delayGrid.querySelector('.delay-btn.selected');
+                        if (!selected || selected.disabled) {
+                            selectDelay(0);
+                            if (isPlaying) startStream();
+                        }
+                    }
+
+                    connStatus.innerText = "● Connected to server";
+                    connStatus.style.color = "#34d399";
+                    connStatus.style.background = "rgba(16, 185, 129, 0.2)";
+                } catch (e) {
+                    connStatus.innerText = "● Server offline (unavailable)";
+                    connStatus.style.color = "#f43f5e";
+                    connStatus.style.background = "rgba(244, 63, 94, 0.2)";
+                }
+            }
+
+            fetchStatus();
+            setInterval(fetchStatus, 30000);
+
+            window.startStream = function() {
+                audio.src = `${streamBaseUrl}?delay=${currentDelay}&t=${new Date().getTime()}`;
+                audio.play().catch(e => {
+                    console.error("Autoplay blocked or network error:", e);
+                });
+
+                isPlaying = true;
+                card.classList.add('playing');
+                playBtnText.innerText = currentDelay === 0 ? 'Pause (Live)' : `Pause (−${currentDelay}h)`;
+                iconPlay.style.display = "none";
+                iconPause.style.display = "inline-block";
+            };
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                audio.pause();
+                audio.src = "";
+                isPlaying = false;
+                card.classList.remove('playing');
+                playBtnText.innerText = "Listen Delayed";
+                iconPlay.style.display = "inline-block";
+                iconPause.style.display = "none";
+            } else {
+                startStream();
+            }
+        }
+    </script>
+</body>
+
+</html>
